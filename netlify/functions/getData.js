@@ -7,7 +7,7 @@ const pool = new Pool({
 
 exports.handler = async(event, context) => {
     try {
-        const result = await pool.query('SELECT * FROM your_table_name'); // اپنی table کا نام لگائیں
+        const result = await pool.query('SELECT * FROM playing_with_neon');
         return {
             statusCode: 200,
             body: JSON.stringify(result.rows)
