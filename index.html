@@ -10,14 +10,21 @@
 
 <body>
     <div id="root"></div>
+
+    <!-- ✅ Add this -->
+    <h2>🚗 Parking Data from Neon DB:</h2>
+    <pre id="output" style="background:#f0f0f0; padding:10px; border-radius:5px;"></pre>
+
+    <!-- Frontend main entry -->
     <script type="module" src="/src/main.tsx"></script>
 
+    <!-- ✅ Netlify function call -->
     <script>
         fetch('/.netlify/functions/getData')
             .then(res => res.json())
             .then(data => {
                 console.log("Data from DB:", data);
-                document.getElementById('output').textContent = JSON.stringify(data);
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
             })
             .catch(err => console.error("Error:", err));
     </script>
