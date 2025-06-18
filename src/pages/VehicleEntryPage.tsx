@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParking } from '../context/ParkingContext';
 import ParkingReceipt from '../components/ParkingReceipt';
 import { LogIn } from 'lucide-react';
+import { useEffect } from 'react';
 
 const VehicleEntryPage: React.FC = () => {
   const [licensePlate, setLicensePlate] = useState('');
@@ -9,6 +10,11 @@ const VehicleEntryPage: React.FC = () => {
   const [registeredVehicle, setRegisteredVehicle] = useState<ReturnType<typeof useParking>['registerEntry']>(null);
   const [error, setError] = useState<string | null>(null);
   const { registerEntry } = useParking();
+  const checkMonthlyPass = (plate: string) => {
+  // LocalStorage ya context se monthly cars check karna
+  const monthlyCars = JSON.parse(localStorage.getItem("monthlyCars") || "[]");
+  return monthlyCars.includes(plate);
+};
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +43,18 @@ const VehicleEntryPage: React.FC = () => {
     setError(null);
   };
   
+  useEffect(() => {
+  if (!licensePlate.trim()) return;
+
+  const isRegisteredMonthly = checkMonthlyPass(licensePlate.trim());
+
+  if (isRegisteredMonthly) {
+    setIsMonthly(true);
+  } else {
+    setIsMonthly(false);
+  }
+}, [licensePlate]);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
