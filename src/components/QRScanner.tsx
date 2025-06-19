@@ -1,38 +1,60 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
 
-const QRScanner: React.FC<{ onScan: (code: string) => void }> = ({ onScan }) => {
-  const [input, setInput] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+interface QRScannerProps {
+  onScan: (decodedText: string) => void;
+  onError?: (error: string) => void;
+}
+
+const QRScanner: React.FC<QRScannerProps> = ({ onScan, onError }) => {
+  const [isScanning, setIsScanning] = useState(false);
+  const hasScannedRef = useRef(false);
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === "Enter") {
-        if (input.length > 0) {
-          onScan(input);
-          setInput("");
+    const startScanner = async () => {
+      try {
+        if (!html5QrCodeRef.current) {
+          html5QrCodeRef.current = new Html5Qrcode('qr-reader');
         }
-      } else {
-        setInput((prev) => prev + e.key);
-      }
-    };
 
-    window.addEventListener("keypress", handleKeyPress);
-    return () => window.removeEventListener("keypress", handleKeyPress);
-  }, [input]);
+        hasScannedRef.current = false;
+        setIsScanning(true);
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+        await html5QrCodeRef.current.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+          },
+          async (decodedText: string) => {
+            if (!hasScannedRef.current) {
+              hasScannedRef.current = true;
+              onScan(decodedText);
 
-  return (
-    <input
-      ref={inputRef}
-      value={input}
-      readOnly
-      placeholder="Scan QR Code..."
-      style={{ width: 300, padding: 10, fontSize: 16 }}
-    />
-  );
-};
+              try {
+                await html5QrCodeRef.current?.stop();
+              } catch (err) {
+                console.error('Error stopping scanner:', err);
+              }
 
-export default QRScanner;
+              html5QrCodeRef.current = null;
+              setIsScanning(false);
+            }
+          },
+          (error: any) => {
+            if (typeof error === 'string' && error.includes('NotFoundException')) {
+              // Normal scanning flow; do nothing
+              return;
+            }
+
+            console.error('QR scan error:', error);
+            if (onError && !hasScannedRef.current) {
+              onError('Failed to scan QR code. Please try again.');
+            }
+          }
+        );
+      } catch (err) {
+        console.error('Failed to start scanner:', err);
+        setIsScanning(false);
+        if (onError) {
