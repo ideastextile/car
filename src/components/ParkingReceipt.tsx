@@ -63,7 +63,7 @@ const ParkingReceipt: React.FC<ParkingReceiptProps> = ({ vehicle }) => {
           <div className="flex justify-center mb-2">
             <Car size={32} className="text-blue-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">SmartPark</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Circular Car Parking Plaza</h1>
           <p className="text-gray-500">Secure Parking Management</p>
           {vehicle.isMonthly && (
             <div className="mt-2">
@@ -108,10 +108,12 @@ const ParkingReceipt: React.FC<ParkingReceiptProps> = ({ vehicle }) => {
         </div>
         
         <div className="receipt-footer mt-6 text-center text-sm text-gray-500">
+          <p>{new Date().toLocaleDateString()}</p>
+          <br>
           <p>Thank you for using SmartPark <span>__by</span> </p> 
           <p> 7starsoftwareservice <span>_ Contect: 03057027172</span></p> 
                                         
-          <p>{new Date().toLocaleDateString()}</p>
+          
         </div>
       </div>
     </div>
