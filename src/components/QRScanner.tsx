@@ -1,90 +1,41 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeCameraScanConfig, CameraDevice } from 'html5-qrcode';
+// components/QRScannerInput.tsx
+import React, { useEffect, useState } from "react";
 
-interface QRScannerProps {
-  onScan: (decodedText: string) => void;
-  onError?: (error: string) => void;
+interface QRScannerInputProps {
+  onScan: (data: string) => void;
 }
 
-const QRScanner: React.FC<QRScannerProps> = ({ onScan, onError }) => {
-  const [isScanning, setIsScanning] = useState(false);
-  const hasScannedRef = useRef(false);
-  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
-  const [cameraId, setCameraId] = useState<string | null>(null);
+const QRScannerInput: React.FC<QRScannerInputProps> = ({ onScan }) => {
+  const [scanned, setScanned] = useState("");
 
   useEffect(() => {
-    // Step 1: Get external camera
-    Html5Qrcode.getCameras()
-      .then((devices: CameraDevice[]) => {
-        if (devices && devices.length) {
-          // You can improve this logic to find a specific external device
-          const externalCam = devices.find(d => !d.label.toLowerCase().includes("integrated")) || devices[0];
-          setCameraId(externalCam.id);
-        } else {
-          throw new Error("No cameras found");
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        if (scanned.trim()) {
+          onScan(scanned.trim());
+          setScanned(""); // reset after scan
         }
-      })
-      .catch((err) => {
-        console.error("Error getting cameras:", err);
-        if (onError) onError("Camera not found.");
-      });
-  }, []);
-
-  useEffect(() => {
-    if (!cameraId) return;
-
-    const startScanner = async () => {
-      try {
-        if (!html5QrCodeRef.current) {
-          html5QrCodeRef.current = new Html5Qrcode('qr-reader');
-        }
-
-        hasScannedRef.current = false;
-        setIsScanning(true);
-
-        await html5QrCodeRef.current.start(
-          cameraId,
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-          },
-          async (decodedText: string) => {
-            if (!hasScannedRef.current) {
-              hasScannedRef.current = true;
-              onScan(decodedText);
-
-              try {
-                await html5QrCodeRef.current?.stop();
-              } catch (err) {
-                console.error('Error stopping scanner:', err);
-              }
-
-              html5QrCodeRef.current = null;
-              setIsScanning(false);
-            }
-          },
-          (error: any) => {
-            if (typeof error === 'string' && error.includes('NotFoundException')) {
-              return;
-            }
-
-            console.error('QR scan error:', error);
-            if (onError && !hasScannedRef.current) {
-              onError('Failed to scan QR code. Please try again.');
-            }
-          }
-        );
-      } catch (err) {
-        console.error('Failed to start scanner:', err);
-        setIsScanning(false);
-        if (onError) onError("Scanner failed to start.");
+      } else {
+        setScanned((prev) => prev + e.key);
       }
     };
 
-    startScanner();
-  }, [cameraId]);
+    window.addEventListener("keypress", handleKeyPress);
+    return () => window.removeEventListener("keypress", handleKeyPress);
+  }, [scanned]);
 
-  return <div id="qr-reader" style={{ width: '300px' }} />;
+  return (
+    <div>
+      <h3>Scan QR Code to Exit</h3>
+      <input
+        type="text"
+        value={scanned}
+        placeholder="Scan QR Code..."
+        readOnly
+        style={{ width: "100%", padding: "10px" }}
+      />
+    </div>
+  );
 };
 
-export default QRScanner;
+export default QRScannerInput;
