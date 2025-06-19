@@ -108,7 +108,7 @@ const ParkingReceipt: React.FC<ParkingReceiptProps> = ({ vehicle }) => {
         </div>
         
         <div className="receipt-footer mt-6 text-center text-sm text-gray-500">
-          
+          <p>{new Date().toLocaleDateString()}</p>
           
           <p>Thank you for using SmartPark <span>__by</span> </p> 
           <p> 7starsoftwareservice <span>_ Contect: 03057027172</span></p> 
