@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeCameraScanConfig, CameraDevice } from 'html5-qrcode';
 
 interface QRScannerProps {
   onScan: (decodedText: string) => void;
@@ -10,8 +10,29 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onError }) => {
   const [isScanning, setIsScanning] = useState(false);
   const hasScannedRef = useRef(false);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const [cameraId, setCameraId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Step 1: Get external camera
+    Html5Qrcode.getCameras()
+      .then((devices: CameraDevice[]) => {
+        if (devices && devices.length) {
+          // You can improve this logic to find a specific external device
+          const externalCam = devices.find(d => !d.label.toLowerCase().includes("integrated")) || devices[0];
+          setCameraId(externalCam.id);
+        } else {
+          throw new Error("No cameras found");
+        }
+      })
+      .catch((err) => {
+        console.error("Error getting cameras:", err);
+        if (onError) onError("Camera not found.");
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!cameraId) return;
+
     const startScanner = async () => {
       try {
         if (!html5QrCodeRef.current) {
@@ -22,7 +43,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onError }) => {
         setIsScanning(true);
 
         await html5QrCodeRef.current.start(
-          { facingMode: 'environment' },
+          cameraId,
           {
             fps: 10,
             qrbox: { width: 250, height: 250 },
@@ -44,7 +65,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onError }) => {
           },
           (error: any) => {
             if (typeof error === 'string' && error.includes('NotFoundException')) {
-              // Normal scanning flow; do nothing
               return;
             }
 
@@ -57,41 +77,14 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onError }) => {
       } catch (err) {
         console.error('Failed to start scanner:', err);
         setIsScanning(false);
-        if (onError) {
-          onError('Failed to access the camera. Please check permissions.');
-        }
+        if (onError) onError("Scanner failed to start.");
       }
     };
 
     startScanner();
+  }, [cameraId]);
 
-    // Clean up scanner on unmount
-    return () => {
-      const stopScanner = async () => {
-        try {
-          await html5QrCodeRef.current?.stop();
-        } catch (err) {
-          console.error('Error while stopping scanner:', err);
-        }
-        html5QrCodeRef.current = null;
-        setIsScanning(false);
-      };
-
-      stopScanner();
-    };
-  }, [onScan, onError]);
-
-  return (
-    <div className="qr-scanner">
-      <div id="qr-reader" className="w-full max-w-md mx-auto min-h-[300px]"></div>
-      {isScanning && (
-        <p className="text-center mt-4 text-gray-600">
-          Position the QR code in front of the camera
-        </p>
-      )}
-    </div>
-  );
+  return <div id="qr-reader" style={{ width: '300px' }} />;
 };
 
 export default QRScanner;
-
